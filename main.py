@@ -138,13 +138,12 @@ class MainUi(Ui_MainWindow, QMainWindow):
 
     # 文件列表添加文件功能
     def add_files(self):
-        parent_item = self.tree_file.currentItem()  # 当前待定项
+        item = self.tree_file.currentItem()  # 当前待定项
         value, ok = QInputDialog.getText(self, '文件名', '请输入文件名：', QLineEdit.Normal, '新文件')  # 获取输入弹出框文本
-        child_item = QTreeWidgetItem(parent_item)  # 创建子项
+        child_item = QTreeWidgetItem(item)  # 创建子项
         child_item.setText(0, value)  # 设置项名称
-        print('父项index',self.tree_file.indexFromItem(parent_item,0),'子项index',self.tree_file.indexFromItem(child_item,0),
-              self.tree_file.indexOfTopLevelItem(parent_item),self.tree_file.indexOfTopLevelItem(child_item))
-        self.tree_file.expandItem(parent_item)  # 展开当前节点
+        print('父项index', self.tree_file.indexOfTopLevelItem(item), self.tree_file.indexOfTopLevelItem(child_item))
+        self.tree_file.expandItem(item)  # 展开当前节点
 
 
 if __name__ == '__main__':

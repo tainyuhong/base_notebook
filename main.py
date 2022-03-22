@@ -1,6 +1,6 @@
 import sys
 import os
-from test_Demo.doc_viewer import *
+from ui.doc_viewer import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *

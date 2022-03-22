@@ -4,6 +4,7 @@ from ui.doc_viewer import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
+from sqlite_handler import *
 from markdown2 import Markdown
 
 
@@ -12,6 +13,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
     def __init__(self, parent=None):
         super(MainUi, self).__init__(parent)
         self.setupUi(self)
+        self.db = DbHandler()
         self.display_text.setHidden(True)
         self.add_tool()  # 添加按钮工具至工具栏中
         self.font_size = ''
@@ -24,6 +26,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
         self.action_save.triggered.connect(self.save)  # 保存数据
         self.action_clip.triggered.connect(self.display_clip)  # 显示粘贴板信息
         self.color.clicked.connect(self.chioce_color)
+        self.display_tree_files()
 
     # 隐藏显示文件大纲tab窗口
     def hide_tabview(self):
@@ -53,6 +56,18 @@ class MainUi(Ui_MainWindow, QMainWindow):
         os.chdir('d:\\')
         with open('test.html', 'wb+') as f:
             f.write(bytes(str, encoding='utf8'))
+
+    # 显示文件树内容
+    def display_tree_files(self):
+        select_tree_file_sql = '''select * from files_sort'''
+        tree_file_data = self.db.select(select_tree_file_sql)
+        print(tree_file_data)       # [(0, '新文件夹1', None), (1, '新文件夹2', None)]
+        # 将项显示在页面上
+        for item in tree_file_data:
+            RootItem = QTreeWidgetItem()
+            print('item项', item)
+            RootItem.setText(0, item[1])  # 显示项
+            self.tree_file.addTopLevelItem(RootItem)
 
     def display_clip(self):
         clip = QApplication.clipboard()
@@ -112,11 +127,14 @@ class MainUi(Ui_MainWindow, QMainWindow):
 
     # 文件列表添加文件夹功能
     def add_dirs(self):
+        create_file_sql = ''' insert into files_sort (id,dir_name) values (?,?); '''
         value, ok = QInputDialog.getText(self, '文件名', '请输入文件名：', QLineEdit.Normal, '新文件夹')  # 获取输入弹出框文本
         # print(value)
         root_dir = QTreeWidgetItem()  # 定义项，作为顶级项
         root_dir.setText(0, value)  # 设置项名称
         self.tree_file.addTopLevelItem(root_dir)  # 设置为顶级项
+        index_id = self.tree_file.indexOfTopLevelItem(root_dir)
+        self.db.alter(create_file_sql,(index_id,value))
 
     # 文件列表添加文件功能
     def add_files(self):

@@ -61,7 +61,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
     def display_tree_files(self):
         select_tree_file_sql = '''select * from files_sort'''
         tree_file_data = self.db.select(select_tree_file_sql)
-        print(tree_file_data)       # [(0, '新文件夹1', None), (1, '新文件夹2', None)]
+        print(tree_file_data)  # [(0, '新文件夹1', None), (1, '新文件夹2', None)]
         # 将项显示在页面上
         for item in tree_file_data:
             RootItem = QTreeWidgetItem()
@@ -117,6 +117,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
             action_alter.setDisabled(True)
         else:
             # print('项被选中')
+            action_create_dir.setDisabled(True)
             action_file.setDisabled(False)
             action_alter.setDisabled(False)
         action_create_dir.triggered.connect(self.add_dirs)
@@ -127,22 +128,36 @@ class MainUi(Ui_MainWindow, QMainWindow):
 
     # 文件列表添加文件夹功能
     def add_dirs(self):
-        create_file_sql = ''' insert into files_sort (id,dir_name) values (?,?); '''
+        create_file_sql = ''' insert into files_sort (id,dir_name,path) values (?,?,?); '''
         value, ok = QInputDialog.getText(self, '文件名', '请输入文件名：', QLineEdit.Normal, '新文件夹')  # 获取输入弹出框文本
         # print(value)
         root_dir = QTreeWidgetItem()  # 定义项，作为顶级项
         root_dir.setText(0, value)  # 设置项名称
         self.tree_file.addTopLevelItem(root_dir)  # 设置为顶级项
         index_id = self.tree_file.indexOfTopLevelItem(root_dir)
-        self.db.alter(create_file_sql,(index_id,value))
+        self.db.alter(create_file_sql, (index_id, value,index_id))
 
     # 文件列表添加文件功能
     def add_files(self):
         item = self.tree_file.currentItem()  # 当前待定项
         value, ok = QInputDialog.getText(self, '文件名', '请输入文件名：', QLineEdit.Normal, '新文件')  # 获取输入弹出框文本
-        child_item = QTreeWidgetItem(item)  # 创建子项
-        child_item.setText(0, value)  # 设置项名称
-        print('父项index', self.tree_file.indexOfTopLevelItem(item), item,item.parent(),item.indexOfChild(child_item))
+        if ok:
+            child_item = QTreeWidgetItem(item)  # 创建子项
+            child_item.setText(0, value)  # 设置项名称
+        else:
+            return
+        index_num = []
+        # 二级目录设定
+        top_index = self.tree_file.indexOfTopLevelItem(item)
+        if top_index >= 0:
+            index_num.append(top_index)
+            index_num.append(item.indexOfChild(child_item))
+            print('索引号',index_num)
+        else:
+            print(self.tree_file.item(item,0))
+            print(self.tree_file.indexOfTopLevelItem(item.parent()))    # 查询当前项的父项的索引
+            # print(self.tree_file.itemFromIndex(child_item))
+        # print('父项index', self.tree_file.indexOfTopLevelItem(item), item, item.parent(), item.indexOfChild(child_item))
         self.tree_file.expandItem(item)  # 展开当前节点
 
 

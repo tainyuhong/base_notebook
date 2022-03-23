@@ -142,7 +142,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
         value, ok = QInputDialog.getText(self, '文件名', '请输入文件名：', QLineEdit.Normal, '新文件')  # 获取输入弹出框文本
         child_item = QTreeWidgetItem(item)  # 创建子项
         child_item.setText(0, value)  # 设置项名称
-        print('父项index', self.tree_file.indexOfTopLevelItem(item), self.tree_file.indexOfTopLevelItem(child_item))
+        print('父项index', self.tree_file.indexOfTopLevelItem(item), item,item.parent(),item.indexOfChild(child_item))
         self.tree_file.expandItem(item)  # 展开当前节点
 
 

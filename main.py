@@ -36,10 +36,10 @@ class MainUi(Ui_MainWindow, QMainWindow):
             self.tabWidget.setHidden(True)
 
     def to_markdown(self):
-        str = self.input_text.toPlainText()
+        text = self.input_text.toPlainText()
         self.display_text.setHidden(False)
         # self.display_text.setMarkdown(str)
-        self.display_text.setHtml(str)
+        self.display_text.setHtml(text)
 
     # 隐藏文本预览窗口
     def hide_textbrowser(self):
@@ -50,12 +50,12 @@ class MainUi(Ui_MainWindow, QMainWindow):
 
     # 保存文档
     def save(self):
-        str = self.input_text.document().toHtml()
+        text = self.input_text.document().toHtml()
         # print(type(str))
         # print(str)
         os.chdir('d:\\')
         with open('test.html', 'wb+') as f:
-            f.write(bytes(str, encoding='utf8'))
+            f.write(bytes(text, encoding='utf8'))
 
     # 显示文件树内容
     def display_tree_files(self):
@@ -64,10 +64,10 @@ class MainUi(Ui_MainWindow, QMainWindow):
         # print(tree_file_data)  # [(0, '新文件夹1', None), (1, '新文件夹2', None)]
         # 将项显示在页面上
         for item in tree_file_data:
-            RootItem = QTreeWidgetItem()
+            root_item = QTreeWidgetItem()
             # print('item项', item)
-            RootItem.setText(0, item[1])  # 显示项
-            self.tree_file.addTopLevelItem(RootItem)
+            root_item.setText(0, item[1])  # 显示项
+            self.tree_file.addTopLevelItem(root_item)
 
     def display_clip(self):
         clip = QApplication.clipboard()

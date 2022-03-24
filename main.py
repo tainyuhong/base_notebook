@@ -61,11 +61,11 @@ class MainUi(Ui_MainWindow, QMainWindow):
     def display_tree_files(self):
         select_tree_file_sql = '''select * from files_sort'''
         tree_file_data = self.db.select(select_tree_file_sql)
-        print(tree_file_data)  # [(0, '新文件夹1', None), (1, '新文件夹2', None)]
+        # print(tree_file_data)  # [(0, '新文件夹1', None), (1, '新文件夹2', None)]
         # 将项显示在页面上
         for item in tree_file_data:
             RootItem = QTreeWidgetItem()
-            print('item项', item)
+            # print('item项', item)
             RootItem.setText(0, item[1])  # 显示项
             self.tree_file.addTopLevelItem(RootItem)
 
@@ -104,60 +104,93 @@ class MainUi(Ui_MainWindow, QMainWindow):
         item = self.tree_file.itemAt(pos)
         # print(item.text(0), item1.text(0))
         self.file_menu = QMenu()
-        action_create_dir = QAction('新建文件夹')  # 新建文件夹菜单
+        action_create_dir = QAction('新建目录')  # 新建文件夹菜单
         action_file = QAction('新建文件')
-        action_alter = QAction('修改文件名')
+        action_alter = QAction('重命名')
+        action_del = QAction('删除文件')
 
         self.file_menu.addAction(action_create_dir)  # 添加到菜单
         self.file_menu.addAction(action_file)
         self.file_menu.addAction(action_alter)
+        self.file_menu.addAction(action_del)
         if item is None:
             # print('在空白处')
-            action_file.setDisabled(True)
-            action_alter.setDisabled(True)
+            action_file.setVisible(False)
+            action_alter.setVisible(False)
+            action_del.setVisible(False)
         else:
             # print('项被选中')
-            action_create_dir.setDisabled(True)
+            action_create_dir.setVisible(False)     # 隐藏新建目录菜单项
             action_file.setDisabled(False)
             action_alter.setDisabled(False)
         action_create_dir.triggered.connect(self.add_dirs)
         action_file.triggered.connect(self.add_files)
-        # action_alter.triggered.connect(self.quick_click)
+        action_del.triggered.connect(self.del_dirs)     # 连接删除目录信号
 
         self.file_menu.exec(self.mapToGlobal(pos))  # 在光标位置显示菜单
 
     # 文件列表添加文件夹功能
     def add_dirs(self):
-        create_file_sql = ''' insert into files_sort (id,dir_name,path) values (?,?,?); '''
+        create_file_sql = ''' insert into files_sort (file_name,path) values (?,?); '''
+        select_file_sql = ''' select max(id) from files_sort s '''
+        select_filename_sql = '''select file_name from files_sort where file_name = ? '''
+        max_id = self.db.select(select_file_sql)[0][0]
+        if max_id is None:
+            max_id =0
         value, ok = QInputDialog.getText(self, '文件名', '请输入文件名：', QLineEdit.Normal, '新文件夹')  # 获取输入弹出框文本
-        # print(value)
-        root_dir = QTreeWidgetItem()  # 定义项，作为顶级项
-        root_dir.setText(0, value)  # 设置项名称
-        self.tree_file.addTopLevelItem(root_dir)  # 设置为顶级项
-        index_id = self.tree_file.indexOfTopLevelItem(root_dir)
-        self.db.alter(create_file_sql, (index_id, value,index_id))
+        print(self.db.select(select_filename_sql, (value,)),ok)
+        if ok is True and self.db.select(select_filename_sql, (value,)) == []:  # 判断文件名是否重复且点击了ok按钮
+            root_dir = QTreeWidgetItem()  # 定义项，作为顶级项
+            root_dir.setText(0, value)  # 设置项名称
+            self.tree_file.addTopLevelItem(root_dir)  # 设置为顶级项
+            # index_id = self.tree_file.indexOfTopLevelItem(root_dir)
+            self.db.alter(create_file_sql, (value,max_id +1))
+        else:
+            QMessageBox.warning(self,'添加文件夹','文件名输入有误或重复，请重新输入！')
+            return
+
+    # 删除目录
+    def del_dirs(self):
+        del_sql = '''delete from files_sort where file_name=?'''
+        item = self.tree_file.currentItem()  # 当前选定项
+        item_name = item.text(0)        # 当前项索引
+        print(item_name)
+        if QMessageBox.question(self,'删除目录','是否确认删除当前目录',QMessageBox.Yes,QMessageBox.No) == QMessageBox.Yes:
+            self.tree_file.takeTopLevelItem(self.tree_file.indexOfTopLevelItem(item))   # 删除当前选择的一级目录
+            self.db.alter(del_sql,(item_name,))
+        else:
+            return
 
     # 文件列表添加文件功能
     def add_files(self):
-        item = self.tree_file.currentItem()  # 当前待定项
+        select_file_sql = ''' select id from files_sort s where s.file_name=? '''
+        add_item_sql = ''' insert into files_sort (file_name,parent_id,path) values (?,?,?); '''
+        item = self.tree_file.currentItem()  # 当前选定项
         value, ok = QInputDialog.getText(self, '文件名', '请输入文件名：', QLineEdit.Normal, '新文件')  # 获取输入弹出框文本
-        if ok:
-            child_item = QTreeWidgetItem(item)  # 创建子项
-            child_item.setText(0, value)  # 设置项名称
-        else:
-            return
         index_num = []
         # 二级目录设定
         top_index = self.tree_file.indexOfTopLevelItem(item)
-        if top_index >= 0:
+        if top_index >= 0 and ok is True:
+            child_item = QTreeWidgetItem(item)  # 创建子项
+            child_item.setText(0, value)  # 设置项名称
             index_num.append(top_index)
             index_num.append(item.indexOfChild(child_item))
             print('索引号',index_num)
-        else:
-            print(self.tree_file.item(item,0))
-            print(self.tree_file.indexOfTopLevelItem(item.parent()))    # 查询当前项的父项的索引
+        elif self.tree_file.indexOfTopLevelItem(item.parent()) >= 0 and ok is True:
+            child_item = QTreeWidgetItem(item)  # 创建子项
+            child_item.setText(0, value)  # 设置项名称
+            # print(self.tree_file.indexOfTopLevelItem(item.parent()))  # 查询顶级项的索引（一级目录）
+            # print(item.parent().indexOfChild(item))     # 当前选择项INDEX（二级目录）
+            # print(item.indexOfChild(child_item))        # 子项索引（三级目录）
+            index_num.append(self.tree_file.indexOfTopLevelItem(item.parent()))     # 顶级项的索引加入序列表（一级目录）
+            index_num.append(item.parent().indexOfChild(item))     # 当前选择项索引加入序列表（二级目录）
+            index_num.append(item.indexOfChild(child_item))     # 当前选择项的子项的索引加入序列表 （三级目录）
+            print(index_num)
             # print(self.tree_file.itemFromIndex(child_item))
         # print('父项index', self.tree_file.indexOfTopLevelItem(item), item, item.parent(), item.indexOfChild(child_item))
+        else :
+            QMessageBox.warning(self,'创建文件','只能创建三级目录')
+            return
         self.tree_file.expandItem(item)  # 展开当前节点
 
 

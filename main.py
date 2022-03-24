@@ -8,6 +8,10 @@ from sqlite_handler import *
 from markdown2 import Markdown
 
 
+# 公用SQL
+select_file_sql = ''' select max(id) from files_sort s '''
+
+
 class MainUi(Ui_MainWindow, QMainWindow):
 
     def __init__(self, parent=None):
@@ -17,6 +21,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
         self.display_text.setHidden(True)
         self.add_tool()  # 添加按钮工具至工具栏中
         self.font_size = ''
+
         self.tree_file.setContextMenuPolicy(Qt.CustomContextMenu)  # 文件列表右键菜单
         self.tree_file.customContextMenuRequested.connect(self.tree_file_menu)  # 绑定右键事件
 
@@ -132,13 +137,12 @@ class MainUi(Ui_MainWindow, QMainWindow):
     # 文件列表添加文件夹功能
     def add_dirs(self):
         create_file_sql = ''' insert into files_sort (file_name,path) values (?,?); '''
-        select_file_sql = ''' select max(id) from files_sort s '''
         select_filename_sql = '''select file_name from files_sort where file_name = ? '''
         max_id = self.db.select(select_file_sql)[0][0]
         if max_id is None:
-            max_id =0
+            max_id = 0
         value, ok = QInputDialog.getText(self, '文件名', '请输入文件名：', QLineEdit.Normal, '新文件夹')  # 获取输入弹出框文本
-        print(self.db.select(select_filename_sql, (value,)),ok)
+        # print(self.db.select(select_filename_sql, (value,)),ok)
         if ok is True and self.db.select(select_filename_sql, (value,)) == []:  # 判断文件名是否重复且点击了ok按钮
             root_dir = QTreeWidgetItem()  # 定义项，作为顶级项
             root_dir.setText(0, value)  # 设置项名称
@@ -163,19 +167,22 @@ class MainUi(Ui_MainWindow, QMainWindow):
 
     # 文件列表添加文件功能
     def add_files(self):
-        select_file_sql = ''' select id from files_sort s where s.file_name=? '''
         add_item_sql = ''' insert into files_sort (file_name,parent_id,path) values (?,?,?); '''
         item = self.tree_file.currentItem()  # 当前选定项
         value, ok = QInputDialog.getText(self, '文件名', '请输入文件名：', QLineEdit.Normal, '新文件')  # 获取输入弹出框文本
         index_num = []
+        max_id = self.db.select(select_file_sql)[0][0]
         # 二级目录设定
-        top_index = self.tree_file.indexOfTopLevelItem(item)
+        top_index = self.tree_file.indexOfTopLevelItem(item)    # 顶级目录索引
         if top_index >= 0 and ok is True:
+            item_name = item.text(0)
+            print('max_id',max_id)
             child_item = QTreeWidgetItem(item)  # 创建子项
             child_item.setText(0, value)  # 设置项名称
             index_num.append(top_index)
             index_num.append(item.indexOfChild(child_item))
             print('索引号',index_num)
+        # 三级目录 文件创建
         elif self.tree_file.indexOfTopLevelItem(item.parent()) >= 0 and ok is True:
             child_item = QTreeWidgetItem(item)  # 创建子项
             child_item.setText(0, value)  # 设置项名称

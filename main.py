@@ -9,7 +9,9 @@ from markdown2 import Markdown
 
 
 # 公用SQL
-select_file_sql = ''' select max(id) from files_sort s '''
+file_max_id_sql = ''' select max(id) from files_sort s '''
+select_fileid_sql = '''select id from files_sort s where s.file_name=? '''
+add_item_sql = ''' insert into files_sort (file_name,parent_id,path) values (?,?,?); '''
 
 
 class MainUi(Ui_MainWindow, QMainWindow):
@@ -62,16 +64,25 @@ class MainUi(Ui_MainWindow, QMainWindow):
         with open('test.html', 'wb+') as f:
             f.write(bytes(text, encoding='utf8'))
 
+    # todo
     # 显示文件树内容
     def display_tree_files(self):
-        select_tree_file_sql = '''select * from files_sort'''
-        tree_file_data = self.db.select(select_tree_file_sql)
-        # print(tree_file_data)  # [(0, '新文件夹1', None), (1, '新文件夹2', None)]
+        select_top_item_sql = '''select file_name,path from files_sort where parent_id is null'''
+        select_second_item_sql = '''select file_name,path from files_sort where parent_id is not null'''
+        select_three_item_sql = '''select file_name,path from files_sort where parent_id is null'''
+        tree_file_data = self.db.select(select_top_item_sql)
+        print(tree_file_data)  # [(0, '新文件夹1', None), (1, '新文件夹2', None)]
         # 将项显示在页面上
         for item in tree_file_data:
             root_item = QTreeWidgetItem()
-            # print('item项', item)
-            root_item.setText(0, item[1])  # 显示项
+            # second_item = QTreeWidgetItem(root_item)
+            # three_item = QTreeWidgetItem(second_item)
+            if len(item[1])==1:
+                root_item.setText(0, item[0])  # 显示项
+            # elif len(item[1])==2:
+            #     print('item项', item)
+            #     second_item.setText(0, item[0])
+            print('item项', item)
             self.tree_file.addTopLevelItem(root_item)
 
     def display_clip(self):
@@ -138,7 +149,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
     def add_dirs(self):
         create_file_sql = ''' insert into files_sort (file_name,path) values (?,?); '''
         select_filename_sql = '''select file_name from files_sort where file_name = ? '''
-        max_id = self.db.select(select_file_sql)[0][0]
+        max_id = self.db.select(file_max_id_sql)[0][0]
         if max_id is None:
             max_id = 0
         value, ok = QInputDialog.getText(self, '文件名', '请输入文件名：', QLineEdit.Normal, '新文件夹')  # 获取输入弹出框文本
@@ -170,29 +181,34 @@ class MainUi(Ui_MainWindow, QMainWindow):
         add_item_sql = ''' insert into files_sort (file_name,parent_id,path) values (?,?,?); '''
         item = self.tree_file.currentItem()  # 当前选定项
         value, ok = QInputDialog.getText(self, '文件名', '请输入文件名：', QLineEdit.Normal, '新文件')  # 获取输入弹出框文本
-        index_num = []
-        max_id = self.db.select(select_file_sql)[0][0]
+        path = ''   # 用于记录父ITEM的ID及本ITEM的ID方便查询管理
+        max_id = self.db.select(file_max_id_sql)[0][0]      # 当前最大ID
+        item_name = item.text(0)        # 当前项名称
+        item_id = self.db.select(select_fileid_sql, (item_name,))[0][0]  # 当前选择项id
         # 二级目录设定
         top_index = self.tree_file.indexOfTopLevelItem(item)    # 顶级目录索引
-        if top_index >= 0 and ok is True:
-            item_name = item.text(0)
-            print('max_id',max_id)
+        if top_index >= 0 and ok:
+            path = item_id
+            path = str(path) + '/'+ str(max_id+1)
+            print('path', path)
+            # 插入数据库并添加至页面
+            self.db.alter(add_item_sql,(value,item_id,path))   # 添加项的ID为最大id+1
             child_item = QTreeWidgetItem(item)  # 创建子项
             child_item.setText(0, value)  # 设置项名称
-            index_num.append(top_index)
-            index_num.append(item.indexOfChild(child_item))
-            print('索引号',index_num)
         # 三级目录 文件创建
-        elif self.tree_file.indexOfTopLevelItem(item.parent()) >= 0 and ok is True:
+        elif self.tree_file.indexOfTopLevelItem(item.parent()) >= 0 and ok:     # 当前选择项的你父项为顶级项且点击了Ok按钮
+            print(item.text(0))
+            select_file_path_sql = ''' select path from files_sort s where s.file_name=?'''
+            item_path = self.db.select(select_file_path_sql,(item_name,))
+            print(item_path)
             child_item = QTreeWidgetItem(item)  # 创建子项
             child_item.setText(0, value)  # 设置项名称
-            # print(self.tree_file.indexOfTopLevelItem(item.parent()))  # 查询顶级项的索引（一级目录）
-            # print(item.parent().indexOfChild(item))     # 当前选择项INDEX（二级目录）
-            # print(item.indexOfChild(child_item))        # 子项索引（三级目录）
-            index_num.append(self.tree_file.indexOfTopLevelItem(item.parent()))     # 顶级项的索引加入序列表（一级目录）
-            index_num.append(item.parent().indexOfChild(item))     # 当前选择项索引加入序列表（二级目录）
-            index_num.append(item.indexOfChild(child_item))     # 当前选择项的子项的索引加入序列表 （三级目录）
-            print(index_num)
+            # path.append(self.tree_file.indexOfTopLevelItem(item.parent()))  # 顶级项的索引加入序列表（一级目录）
+            # path.append(item.parent().indexOfChild(item))  # 当前选择项索引加入序列表（二级目录）
+            # path.append(item.indexOfChild(child_item))  # 当前选择项的子项的索引加入序列表 （三级目录）
+            path = str(item_path[0][0]) + '/' + str(max_id+1)       # 当前选择项的子项的层级位置信息
+            print(path)
+            self.db.alter(add_item_sql,(value,path.split('/')[1],path))  # 写入数据库 ，path.split('/')[1]：为当前选择项的id为作子项的父ID
             # print(self.tree_file.itemFromIndex(child_item))
         # print('父项index', self.tree_file.indexOfTopLevelItem(item), item, item.parent(), item.indexOfChild(child_item))
         else :

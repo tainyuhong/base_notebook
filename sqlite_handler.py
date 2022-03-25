@@ -39,7 +39,7 @@ class DbHandler(object):
         :param param: 为元组类型数据结构
         :return:
         '''
-        # print('传入参数',param)
+        print('传入参数',param)
         try:
             if param is None:
                 self.cursor.execute(sql)

@@ -26,13 +26,14 @@ class MainUi(Ui_MainWindow, QMainWindow):
         self.tree_file.setContextMenuPolicy(Qt.CustomContextMenu)  # 文件列表右键菜单
         self.tree_file.customContextMenuRequested.connect(self.tree_file_menu)  # 绑定右键事件
 
-        self.input_text.textChanged.connect(self.to_markdown)
+        # self.input_text.textChanged.connect(self.to_markdown)   # 输入框内容变更同步显示至预览框中
         self.action_displaylist.changed.connect(self.hide_tabview)  # 显示与隐藏tabwidget预览窗口
         # self.action_to_md.changed.connect(self.hide_textbrowser)    # 显示与隐藏markdown预览窗口
         self.action_save.triggered.connect(self.save)  # 保存数据
         self.action_clip.triggered.connect(self.display_clip)  # 显示粘贴板信息
-        self.color.clicked.connect(self.chioce_color)
-        self.display_tree_files()
+        self.color.clicked.connect(self.chioce_color)   # 设置字体的颜色
+        self.display_tree_files()       # 显示文件列表内容
+        self.tree_file.clicked.connect(self.load_content_to_win)    # 文件列表点击事件连接到显示文件函数
 
     # 隐藏显示文件大纲tab窗口
     def hide_tabview(self):
@@ -56,33 +57,56 @@ class MainUi(Ui_MainWindow, QMainWindow):
 
     # 保存文档
     def save(self):
-        text = self.input_text.document().toHtml()
-        # print(type(str))
-        # print(str)
-        os.chdir('d:\\')
-        with open('test.html', 'wb+') as f:
-            f.write(bytes(text, encoding='utf8'))
+        save_to_html_sql = '''insert into file_content (file_id,filename,content,create_date) values(?,?,?,?);'''
+        text_conntent = self.input_text.document().toHtml()
+        item = self.tree_file.currentItem()     # 当前选择文件
+        if item:
+            file_id = self.db.select(select_fileid_sql,(item.text(0),))[0][0]
+            print(file_id)
+            time = QDateTime.currentDateTime()  # 获取系统当前时间
+            timedisplay = time.toString("yyyy-MM-dd hh:mm:ss")  # 格式化一下时间
+            print(timedisplay)
+            # 保存至数据库
+            try:
+                self.db.alter(save_to_html_sql, (file_id, item.text(0), text_conntent,timedisplay))
+            except Exception as e:
+                print('错误：',e)
+            else:
+                print('数据保存成功！')
+        else:
+            return
 
-    # todo
+    # todo 重新保存提示UNIQUE constraint failed: file_content.file_id，重新保存应该为修改内容字段并写入修改字段
+    # 显示加载显示文件内容
+    def load_content_to_win(self):
+        content_sql = ''' select content from file_content where filename=? '''     # 按文件名查询内容字段
+        item = self.tree_file.currentItem()  # 当前选择文件
+        html_content = self.db.select(content_sql,(item.text(0),))
+        print(html_content)
+        if len(html_content) >0:
+            self.input_text.setHtml(html_content[0][0])
+            print('加载到页面成功。。。')
+        else:
+            return
+
     # 显示文件树内容
     def display_tree_files(self):
         select_top_item_sql = '''select file_name,path from files_sort where parent_id is null'''
         select_second_item_sql = '''select file_name,path from files_sort where parent_id = (select id from files_sort where file_name=?);'''
-        select_three_item_sql = '''select file_name,path from files_sort where parent_id is null'''
         top_tree_data = self.db.select(select_top_item_sql)
-        print(top_tree_data)  # [(0, '新文件夹1', None), (1, '新文件夹2', None)]
+        # print(top_tree_data)  # [(0, '新文件夹1', None), (1, '新文件夹2', None)]
         # 将项显示在页面上
         for item in top_tree_data:
             root_item = QTreeWidgetItem()
             root_item.setText(0, item[0])  # 显示项
             second_item_data = self.db.select(select_second_item_sql, (item[0],))
-            print('second_item_data',second_item_data)
+            # print('second_item_data',second_item_data)
             # 显示二级item
             for sec_item in second_item_data:
                 second_item = QTreeWidgetItem(root_item)
                 second_item.setText(0, sec_item[0])
                 three_item_data = self.db.select(select_second_item_sql, (sec_item[0],))
-                print('三级',three_item_data)
+                # print('三级',three_item_data)
                 # 显示三级item
                 for thr_item in three_item_data:
                     three_item = QTreeWidgetItem(second_item)
@@ -117,7 +141,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
     def chioce_color(self):
         color = QColorDialog.getColor()
         if color.isValid():
-            self.color.setStyleSheet("background-color:{}".format(color.name()))
+            self.color.setStyleSheet("background-color:{}".format(color.name()))    # 颜色设置按钮的背景颜色
 
     # 文件列表框右键菜单
     def tree_file_menu(self, pos):
@@ -139,7 +163,6 @@ class MainUi(Ui_MainWindow, QMainWindow):
             action_alter.setVisible(False)
             action_del.setVisible(False)
         else:
-            # print('项被选中')
             action_create_dir.setVisible(False)  # 隐藏新建目录菜单项
             action_file.setDisabled(False)
             action_alter.setDisabled(False)
@@ -194,28 +217,23 @@ class MainUi(Ui_MainWindow, QMainWindow):
         if top_index >= 0 and ok:
             path = item_id
             path = str(path) + '/' + str(max_id + 1)
-            print('path', path)
+            # print('path', path)
             # 插入数据库并添加至页面
             self.db.alter(add_item_sql, (value, item_id, path))  # 添加项的ID为最大id+1
             child_item = QTreeWidgetItem(item)  # 创建子项
             child_item.setText(0, value)  # 设置项名称
         # 三级目录 文件创建
         elif self.tree_file.indexOfTopLevelItem(item.parent()) >= 0 and ok:  # 当前选择项的你父项为顶级项且点击了Ok按钮
-            print(item.text(0))
+            # print(item.text(0))
             select_file_path_sql = ''' select path from files_sort s where s.file_name=?'''
             item_path = self.db.select(select_file_path_sql, (item_name,))
-            print(item_path)
+            # print(item_path)
             child_item = QTreeWidgetItem(item)  # 创建子项
             child_item.setText(0, value)  # 设置项名称
-            # path.append(self.tree_file.indexOfTopLevelItem(item.parent()))  # 顶级项的索引加入序列表（一级目录）
-            # path.append(item.parent().indexOfChild(item))  # 当前选择项索引加入序列表（二级目录）
-            # path.append(item.indexOfChild(child_item))  # 当前选择项的子项的索引加入序列表 （三级目录）
             path = str(item_path[0][0]) + '/' + str(max_id + 1)  # 当前选择项的子项的层级位置信息
-            print(path)
+            # print(path)
             self.db.alter(add_item_sql,
                           (value, path.split('/')[1], path))  # 写入数据库 ，path.split('/')[1]：为当前选择项的id为作子项的父ID
-            # print(self.tree_file.itemFromIndex(child_item))
-        # print('父项index', self.tree_file.indexOfTopLevelItem(item), item, item.parent(), item.indexOfChild(child_item))
         else:
             QMessageBox.warning(self, '创建文件', '只能创建三级目录')
             return

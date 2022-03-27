@@ -31,9 +31,9 @@ class MainUi(Ui_MainWindow, QMainWindow):
         # self.action_to_md.changed.connect(self.hide_textbrowser)    # 显示与隐藏markdown预览窗口
         self.action_save.triggered.connect(self.save)  # 保存数据
         self.action_clip.triggered.connect(self.display_clip)  # 显示粘贴板信息
-        self.color.clicked.connect(self.chioce_color)   # 设置字体的颜色
-        self.display_tree_files()       # 显示文件列表内容
-        self.tree_file.clicked.connect(self.load_content_to_win)    # 文件列表点击事件连接到显示文件函数
+        self.color.clicked.connect(self.chioce_color)  # 设置字体的颜色
+        self.display_tree_files()  # 显示文件列表内容
+        self.tree_file.clicked.connect(self.load_content_to_win)  # 文件列表点击事件连接到显示文件函数
 
     # 隐藏显示文件大纲tab窗口
     def hide_tabview(self):
@@ -58,35 +58,47 @@ class MainUi(Ui_MainWindow, QMainWindow):
     # 保存文档
     def save(self):
         save_to_html_sql = '''insert into file_content (file_id,filename,content,create_date) values(?,?,?,?);'''
+        content_file_id_sql = '''select file_id from file_content where file_id=? '''  # 文件内容表中file_id
+        alter_content_sql = ''' update file_content set content=?,last_alter_date=? where file_id = ? '''     # 修改文件内容
         text_conntent = self.input_text.document().toHtml()
-        item = self.tree_file.currentItem()     # 当前选择文件
+        item = self.tree_file.currentItem()  # 当前选择文件
         if item:
-            file_id = self.db.select(select_fileid_sql,(item.text(0),))[0][0]
+            file_id = self.db.select(select_fileid_sql, (item.text(0),))[0][0]  # 从文件列表中获取文件id
             print(file_id)
             time = QDateTime.currentDateTime()  # 获取系统当前时间
             timedisplay = time.toString("yyyy-MM-dd hh:mm:ss")  # 格式化一下时间
-            print(timedisplay)
-            # 保存至数据库
-            try:
-                self.db.alter(save_to_html_sql, (file_id, item.text(0), text_conntent,timedisplay))
-            except Exception as e:
-                print('错误：',e)
+            content_file_id = self.db.select(content_file_id_sql,(file_id,))    # 查询文件内容表中的文件id
+            print(content_file_id)
+            # 保存至数据库,判断文件内容列表中是否有数据，有则修改，无所添加
+            if len(content_file_id) == 0:
+                try:
+                    self.db.alter(save_to_html_sql, (file_id, item.text(0), text_conntent, timedisplay))
+                except Exception as e:
+                    print('错误：', e)
+                else:
+                    print('数据保存成功！')
             else:
-                print('数据保存成功！')
+                try:
+                    self.db.alter(alter_content_sql, (text_conntent, timedisplay,file_id))
+                except Exception as e:
+                    print('错误：', e)
+                else:
+                    print('数据修改成功！')
         else:
             return
 
-    # todo 重新保存提示UNIQUE constraint failed: file_content.file_id，重新保存应该为修改内容字段并写入修改字段
     # 显示加载显示文件内容
     def load_content_to_win(self):
-        content_sql = ''' select content from file_content where filename=? '''     # 按文件名查询内容字段
+        content_sql = ''' select content from file_content where filename=? '''  # 按文件名查询内容字段
         item = self.tree_file.currentItem()  # 当前选择文件
-        html_content = self.db.select(content_sql,(item.text(0),))
+        html_content = self.db.select(content_sql, (item.text(0),))
         print(html_content)
-        if len(html_content) >0:
+        if len(html_content) > 0:
+            self.input_text.clear()
             self.input_text.setHtml(html_content[0][0])
             print('加载到页面成功。。。')
         else:
+            self.input_text.clear()
             return
 
     # 显示文件树内容
@@ -141,7 +153,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
     def chioce_color(self):
         color = QColorDialog.getColor()
         if color.isValid():
-            self.color.setStyleSheet("background-color:{}".format(color.name()))    # 颜色设置按钮的背景颜色
+            self.color.setStyleSheet("background-color:{}".format(color.name()))  # 颜色设置按钮的背景颜色
 
     # 文件列表框右键菜单
     def tree_file_menu(self, pos):
@@ -191,17 +203,23 @@ class MainUi(Ui_MainWindow, QMainWindow):
             QMessageBox.warning(self, '添加文件夹', '文件名输入有误或重复，请重新输入！')
             return
 
+    # todo 删除子项功能待完善
     # 删除目录
     def del_dirs(self):
         del_sql = '''delete from files_sort where file_name=?'''
         item = self.tree_file.currentItem()  # 当前选定项
         item_name = item.text(0)  # 当前项索引
-        print(item_name)
-        if QMessageBox.question(self, '删除目录', '是否确认删除当前目录', QMessageBox.Yes, QMessageBox.No) == QMessageBox.Yes:
-            self.tree_file.takeTopLevelItem(self.tree_file.indexOfTopLevelItem(item))  # 删除当前选择的一级目录
-            self.db.alter(del_sql, (item_name,))
+        print('子项数',item.childCount())
+        # 判断是否有子项
+        if item.childCount() == 0:
+            if QMessageBox.question(self, '删除目录', '是否确认删除当前目录', QMessageBox.Yes, QMessageBox.No) == QMessageBox.Yes:
+                # self.tree_file.takeTopLevelItem(self.tree_file.indexOfTopLevelItem(item))  # 删除当前选择的一级目录
+                self.tree_file.takeTopLevelItem(self.tree_file.indexOfTopLevelItem(item))  # 删除当前选择的一级目录
+                self.db.alter(del_sql, (item_name,))
+            else:
+                return
         else:
-            return
+            QMessageBox.warning(self,'删除目录','该目录下还有子项，不能删除')
 
     # 文件列表添加文件功能
     def add_files(self):

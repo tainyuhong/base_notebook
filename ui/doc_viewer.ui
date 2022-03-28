@@ -221,6 +221,10 @@
    <addaction name="action_clip"/>
   </widget>
   <action name="action_open">
+   <property name="icon">
+    <iconset resource="images.qrc">
+     <normaloff>:/icons/img/打开.png</normaloff>:/icons/img/打开.png</iconset>
+   </property>
    <property name="text">
     <string>打开</string>
    </property>
@@ -250,19 +254,31 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="icon">
+    <iconset resource="images.qrc">
+     <normaloff>:/icons/img/md.png</normaloff>:/icons/img/md.png</iconset>
+   </property>
    <property name="text">
-    <string>源码/预览</string>
+    <string>MD</string>
    </property>
    <property name="toolTip">
-    <string>源码/预览</string>
+    <string>markdown编辑方式</string>
    </property>
   </action>
   <action name="action_save">
+   <property name="icon">
+    <iconset resource="images.qrc">
+     <normaloff>:/icons/img/保存.png</normaloff>:/icons/img/保存.png</iconset>
+   </property>
    <property name="text">
     <string>保存</string>
    </property>
   </action>
   <action name="action_exit">
+   <property name="icon">
+    <iconset resource="images.qrc">
+     <normaloff>:/icons/img/退出6.png</normaloff>:/icons/img/退出6.png</iconset>
+   </property>
    <property name="text">
     <string>退出</string>
    </property>
@@ -343,6 +359,8 @@
    </property>
   </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="images.qrc"/>
+ </resources>
  <connections/>
 </ui>

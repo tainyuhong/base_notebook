@@ -28,7 +28,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
 
         # self.input_text.textChanged.connect(self.to_markdown)   # 输入框内容变更同步显示至预览框中
         self.action_displaylist.changed.connect(self.hide_tabview)  # 显示与隐藏tabwidget预览窗口
-        # self.action_to_md.changed.connect(self.hide_textbrowser)    # 显示与隐藏markdown预览窗口
+        self.action_to_md.changed.connect(self.hide_textbrowser)    # 显示与隐藏markdown预览窗口
         self.action_save.triggered.connect(self.save)  # 保存数据
         self.action_clip.triggered.connect(self.display_clip)  # 显示粘贴板信息
         self.color.clicked.connect(self.chioce_color)  # 设置字体的颜色
@@ -45,15 +45,17 @@ class MainUi(Ui_MainWindow, QMainWindow):
     def to_markdown(self):
         text = self.input_text.toPlainText()
         self.display_text.setHidden(False)
-        # self.display_text.setMarkdown(str)
-        self.display_text.setHtml(text)
+        self.display_text.setMarkdown(text)
+        # self.display_text.setHtml(text)
 
     # 隐藏文本预览窗口
     def hide_textbrowser(self):
         if self.action_to_md.isChecked():
             self.display_text.setHidden(False)
+            self.input_text.textChanged.connect(self.to_markdown)   # 输入框内容变更同步显示至预览框中
         else:
             self.display_text.setHidden(True)
+            self.input_text.textChanged.disconnect(self.to_markdown)  # 输入框内容变更同步显示至预览框中
 
     # 保存文档
     def save(self):
@@ -145,15 +147,21 @@ class MainUi(Ui_MainWindow, QMainWindow):
         self.font = QFontComboBox()
         self.font.setMaximumWidth(100)  # 设置字体选择下拉框的最大宽度
         self.toolBar_quick.addWidget(self.font)
-        self.color = QPushButton('颜色')  # 颜色
-        self.color.setMaximumSize(40, 40)
+        self.color = QPushButton()  # 颜色
+        self.color.setIcon(QIcon(":/icons/img/font.png"))
+        self.color.setIconSize(QSize(25, 25))
+        self.color.setMaximumSize(25, 25)
+        self.color.setFlat(True)
         self.toolBar_quick.addWidget(self.color)
 
-    # 颜色选择
+    # 设置字体颜色
     def chioce_color(self):
         color = QColorDialog.getColor()
+        select_text = self.input_text.textCursor()
+        print('选中内容：',select_text.position())
         if color.isValid():
             self.color.setStyleSheet("background-color:{}".format(color.name()))  # 颜色设置按钮的背景颜色
+            # self.color.setStyleSheet("color:{}".format(color.name()))  # 颜色设置按钮的背景颜色
 
     # 文件列表框右键菜单
     def tree_file_menu(self, pos):
@@ -203,7 +211,6 @@ class MainUi(Ui_MainWindow, QMainWindow):
             QMessageBox.warning(self, '添加文件夹', '文件名输入有误或重复，请重新输入！')
             return
 
-    # todo 删除子项功能待完善
     # 删除目录
     def del_dirs(self):
         del_sql = '''delete from files_sort where file_name=?'''
@@ -213,13 +220,20 @@ class MainUi(Ui_MainWindow, QMainWindow):
         # 判断是否有子项
         if item.childCount() == 0:
             if QMessageBox.question(self, '删除目录', '是否确认删除当前目录', QMessageBox.Yes, QMessageBox.No) == QMessageBox.Yes:
-                # self.tree_file.takeTopLevelItem(self.tree_file.indexOfTopLevelItem(item))  # 删除当前选择的一级目录
-                self.tree_file.takeTopLevelItem(self.tree_file.indexOfTopLevelItem(item))  # 删除当前选择的一级目录
-                self.db.alter(del_sql, (item_name,))
+                if self.tree_file.indexOfTopLevelItem(item) < 0:
+                    item.parent().takeChildren()  # 删除当前选择的子项
+                else:
+                    self.tree_file.takeTopLevelItem(self.tree_file.indexOfTopLevelItem(item))  # 删除当前选择的一级目录
+                try:
+                    self.db.alter(del_sql, (item_name,))        # 从数据库中删除
+                except Exception as e:
+                    print('错误：',e)
+                else:
+                    print('删除成功！')
             else:
                 return
         else:
-            QMessageBox.warning(self,'删除目录','该目录下还有子项，不能删除')
+            QMessageBox.warning(self,'删除目录','该目录存在下级目录，不能删除')
 
     # 文件列表添加文件功能
     def add_files(self):

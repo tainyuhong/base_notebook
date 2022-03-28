@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (QApplication, QFrame, QHeaderView, QMainWindow,
     QStatusBar, QTabWidget, QTextBrowser, QTextEdit,
     QToolBar, QTreeWidget, QTreeWidgetItem, QVBoxLayout,
     QWidget)
+import ui.images_rc
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -29,6 +30,9 @@ class Ui_MainWindow(object):
         MainWindow.resize(1000, 750)
         self.action_open = QAction(MainWindow)
         self.action_open.setObjectName(u"action_open")
+        icon = QIcon()
+        icon.addFile(u":/icons/img/\u6253\u5f00.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.action_open.setIcon(icon)
         self.action_bold = QAction(MainWindow)
         self.action_bold.setObjectName(u"action_bold")
         self.action_displaylist = QAction(MainWindow)
@@ -40,10 +44,19 @@ class Ui_MainWindow(object):
         self.action_to_md = QAction(MainWindow)
         self.action_to_md.setObjectName(u"action_to_md")
         self.action_to_md.setCheckable(True)
+        icon1 = QIcon()
+        icon1.addFile(u":/icons/img/md.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.action_to_md.setIcon(icon1)
         self.action_save = QAction(MainWindow)
         self.action_save.setObjectName(u"action_save")
+        icon2 = QIcon()
+        icon2.addFile(u":/icons/img/\u4fdd\u5b58.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.action_save.setIcon(icon2)
         self.action_exit = QAction(MainWindow)
         self.action_exit.setObjectName(u"action_exit")
+        icon3 = QIcon()
+        icon3.addFile(u":/icons/img/\u9000\u51fa6.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.action_exit.setIcon(icon3)
         self.actioncut = QAction(MainWindow)
         self.actioncut.setObjectName(u"actioncut")
         self.actionpate = QAction(MainWindow)
@@ -220,9 +233,9 @@ class Ui_MainWindow(object):
         self.action_bold.setText(QCoreApplication.translate("MainWindow", u"\u52a0\u7c97", None))
         self.action_displaylist.setText(QCoreApplication.translate("MainWindow", u"\u663e\u793a/\u9690\u85cf\u5217\u8868", None))
         self.action_full.setText(QCoreApplication.translate("MainWindow", u"\u5168\u5c4f\u9884\u89c8", None))
-        self.action_to_md.setText(QCoreApplication.translate("MainWindow", u"\u6e90\u7801/\u9884\u89c8", None))
+        self.action_to_md.setText(QCoreApplication.translate("MainWindow", u"MD", None))
 #if QT_CONFIG(tooltip)
-        self.action_to_md.setToolTip(QCoreApplication.translate("MainWindow", u"\u6e90\u7801/\u9884\u89c8", None))
+        self.action_to_md.setToolTip(QCoreApplication.translate("MainWindow", u"markdown\u7f16\u8f91\u65b9\u5f0f", None))
 #endif // QT_CONFIG(tooltip)
         self.action_save.setText(QCoreApplication.translate("MainWindow", u"\u4fdd\u5b58", None))
         self.action_exit.setText(QCoreApplication.translate("MainWindow", u"\u9000\u51fa", None))

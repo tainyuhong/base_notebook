@@ -19,7 +19,8 @@ class MainUi(Ui_MainWindow, QMainWindow):
         super(MainUi, self).__init__(parent)
         self.setupUi(self)
         self.db = DbHandler()
-        self.display_text.setHidden(True)
+        self.display_text.setHidden(True)       # 设置默认隐藏markdown预览窗口
+        self.input_text.setReadOnly(True)       # 设置默认输入文本窗口为只读，防止没有选中目录直接编辑
         self.add_tool()  # 添加按钮工具至工具栏中
         self.font_size = ''
 
@@ -52,6 +53,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
     def hide_textbrowser(self):
         if self.action_to_md.isChecked():
             self.display_text.setHidden(False)
+            self.to_markdown()  # 进行预览markdown文件，当原来有内容时，将原有的内容先进行转换
             self.input_text.textChanged.connect(self.to_markdown)   # 输入框内容变更同步显示至预览框中
         else:
             self.display_text.setHidden(True)
@@ -92,9 +94,10 @@ class MainUi(Ui_MainWindow, QMainWindow):
     # 显示加载显示文件内容
     def load_content_to_win(self):
         content_sql = ''' select content from file_content where filename=? '''  # 按文件名查询内容字段
+        self.input_text.setReadOnly(False)    # 显示文件编辑框
         item = self.tree_file.currentItem()  # 当前选择文件
         html_content = self.db.select(content_sql, (item.text(0),))
-        print(html_content)
+        # print(html_content)
         if len(html_content) > 0:
             self.input_text.clear()
             self.input_text.setHtml(html_content[0][0])
@@ -158,7 +161,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
     def chioce_color(self):
         color = QColorDialog.getColor()
         select_text = self.input_text.textCursor()
-        print('选中内容：',select_text.position())
+        print('选中内容：',select_text.block())
         if color.isValid():
             self.color.setStyleSheet("background-color:{}".format(color.name()))  # 颜色设置按钮的背景颜色
             # self.color.setStyleSheet("color:{}".format(color.name()))  # 颜色设置按钮的背景颜色

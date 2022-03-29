@@ -22,7 +22,6 @@ class MainUi(Ui_MainWindow, QMainWindow):
         self.display_text.setHidden(True)       # 设置默认隐藏markdown预览窗口
         self.input_text.setReadOnly(True)       # 设置默认输入文本窗口为只读，防止没有选中目录直接编辑
         self.add_tool()  # 添加按钮工具至工具栏中
-        self.font_size = ''
 
         self.tree_file.setContextMenuPolicy(Qt.CustomContextMenu)  # 文件列表右键菜单
         self.tree_file.customContextMenuRequested.connect(self.tree_file_menu)  # 绑定右键事件
@@ -43,11 +42,11 @@ class MainUi(Ui_MainWindow, QMainWindow):
         else:
             self.tabWidget.setHidden(True)
 
+    # 转换为markdown方式预览
     def to_markdown(self):
         text = self.input_text.toPlainText()
         self.display_text.setHidden(False)
         self.display_text.setMarkdown(text)
-        # self.display_text.setHtml(text)
 
     # 隐藏文本预览窗口
     def hide_textbrowser(self):
@@ -89,6 +88,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
                 else:
                     print('数据修改成功！')
         else:
+            print('未选择项，不能保存')
             return
 
     # 显示加载显示文件内容
@@ -130,6 +130,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
                     three_item.setText(0, thr_item[0])
             self.tree_file.addTopLevelItem(root_item)
 
+    # 显示粘贴板内容
     def display_clip(self):
         clip = QApplication.clipboard()
         print('剪贴板内容：', clip)  # 显示剪贴板对象地址
@@ -141,30 +142,48 @@ class MainUi(Ui_MainWindow, QMainWindow):
         cur = self.display_text.textCursor()  # 设定文本游标
         cur.insertImage(clip.mimeData().text())  # 根据图片地址插入图片
 
+    # 快捷工具栏
     def add_tool(self):
+        # 字体大小
         self.font_size = QComboBox()
         for _ in range(9, 50):
             self.font_size.addItem(str(_))
         self.font_size.setCurrentText('12')  # 设置默认字号
         self.toolBar_quick.addWidget(self.font_size)
+        self.font_size.currentTextChanged.connect(self.chioce_font_size)    # 连接到字号大小设置槽函数
+
+        # 字体设置
         self.font = QFontComboBox()
         self.font.setMaximumWidth(100)  # 设置字体选择下拉框的最大宽度
-        self.toolBar_quick.addWidget(self.font)
+        self.toolBar_quick.addWidget(self.font)     # 将字号设置控件加入到快捷栏
         self.color = QPushButton()  # 颜色
-        self.color.setIcon(QIcon(":/icons/img/font.png"))
+        self.color.setIcon(QIcon(":/icons/img/font.png"))   # 颜色设置按钮图标
         self.color.setIconSize(QSize(25, 25))
         self.color.setMaximumSize(25, 25)
         self.color.setFlat(True)
-        self.toolBar_quick.addWidget(self.color)
+        self.toolBar_quick.addWidget(self.color)        # 将颜色设置控件加入到快捷栏
 
     # 设置字体颜色
     def chioce_color(self):
         color = QColorDialog.getColor()
         select_text = self.input_text.textCursor()
-        print('选中内容：',select_text.block())
+        # print('选中内容：',color.name())
         if color.isValid():
             self.color.setStyleSheet("background-color:{}".format(color.name()))  # 颜色设置按钮的背景颜色
-            # self.color.setStyleSheet("color:{}".format(color.name()))  # 颜色设置按钮的背景颜色
+            select_text.insertHtml(
+                '<p><span style="color: {}">{}</span></p>'.format(color.name(), select_text.selectedText()))
+
+    # todo 字体设置需要修改为QFontDialog.getFont()
+    # 设置字体大小
+    def chioce_font_size(self):
+        font_size = self.font_size.currentText()
+        select_text = self.input_text.textCursor()      # 游标位置
+        print('选择的字号：',font_size)
+        select_text.insertHtml(
+            '<p><font size= "{}">{}</font></p>'.format(font_size, select_text.selectedText()))
+        print('选择的字号：', QFontDialog.getFont())
+
+
 
     # 文件列表框右键菜单
     def tree_file_menu(self, pos):

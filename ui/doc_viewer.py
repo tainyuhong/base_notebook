@@ -138,7 +138,8 @@ class Ui_MainWindow(object):
         font.setPointSize(12)
         self.input_text.setFont(font)
         self.input_text.setAutoFillBackground(False)
-        self.input_text.setStyleSheet(u"background-color:rgb(253,245,230)")
+        self.input_text.setStyleSheet(u"background-color:rgb(253,245,230);\n"
+"selection-background-color:DeepSkyBlue")
         self.input_text.setFrameShape(QFrame.WinPanel)
         self.input_text.setFrameShadow(QFrame.Sunken)
         self.input_text.setOverwriteMode(False)

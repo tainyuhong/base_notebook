@@ -1,10 +1,15 @@
 <RCC>
   <qresource prefix="icons">
+    <file>../img/bj1.png</file>
     <file>../img/文档.png</file>
     <file>../img/打开.png</file>
     <file>../img/退出6.png</file>
     <file>../img/md.png</file>
     <file>../img/保存.png</file>
     <file>../img/font.png</file>
+    <file>../img/bold.png</file>
+    <file>../img/italic.png</file>
+    <file>../img/52.ico</file>
+    <file>../img/2.ico</file>
   </qresource>
 </RCC>

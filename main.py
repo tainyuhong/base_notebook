@@ -11,18 +11,20 @@ from markdown2 import Markdown
 file_max_id_sql = ''' select max(id) from files_sort s '''
 select_fileid_sql = '''select id from files_sort s where s.file_name=? '''
 add_item_sql = ''' insert into files_sort (file_name,parent_id,path) values (?,?,?); '''
-
+select_filename_sql = '''select file_name from files_sort where file_name = ? '''
 
 class MainUi(Ui_MainWindow, QMainWindow):
 
     def __init__(self, parent=None):
         super(MainUi, self).__init__(parent)
         self.setupUi(self)
-        self.db = DbHandler()
+        self.setWindowIcon(QIcon(":/icons/img/bj1.png"))
+        self.db = DbHandler()       # 实例化数据库
         self.display_text.setHidden(True)       # 设置默认隐藏markdown预览窗口
         self.input_text.setReadOnly(True)       # 设置默认输入文本窗口为只读，防止没有选中目录直接编辑
         self.add_tool()  # 添加按钮工具至工具栏中
 
+        # 连接相应信号与槽
         self.tree_file.setContextMenuPolicy(Qt.CustomContextMenu)  # 文件列表右键菜单
         self.tree_file.customContextMenuRequested.connect(self.tree_file_menu)  # 绑定右键事件
 
@@ -34,6 +36,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
         self.color.clicked.connect(self.chioce_color)  # 设置字体的颜色
         self.display_tree_files()  # 显示文件列表内容
         self.tree_file.clicked.connect(self.load_content_to_win)  # 文件列表点击事件连接到显示文件函数
+
 
     # 隐藏显示文件大纲tab窗口
     def hide_tabview(self):
@@ -116,12 +119,14 @@ class MainUi(Ui_MainWindow, QMainWindow):
         for item in top_tree_data:
             root_item = QTreeWidgetItem()
             root_item.setText(0, item[0])  # 显示项
+            root_item.setIcon(0, QIcon(':icons/img/52.ico'))        # 一级目录添加图标
             second_item_data = self.db.select(select_second_item_sql, (item[0],))
             # print('second_item_data',second_item_data)
             # 显示二级item
             for sec_item in second_item_data:
                 second_item = QTreeWidgetItem(root_item)
                 second_item.setText(0, sec_item[0])
+                second_item.setIcon(0, QIcon(':icons/img/2.ico'))  # 二级目录添加图标
                 three_item_data = self.db.select(select_second_item_sql, (sec_item[0],))
                 # print('三级',three_item_data)
                 # 显示三级item
@@ -150,23 +155,48 @@ class MainUi(Ui_MainWindow, QMainWindow):
             self.font_size.addItem(str(_))
         self.font_size.setCurrentText('12')  # 设置默认字号
         self.toolBar_quick.addWidget(self.font_size)
-        self.font_size.currentTextChanged.connect(self.chioce_font_size)    # 连接到字号大小设置槽函数
+        self.font_size.currentTextChanged.connect(self.change_font_size)    # 连接到字号大小设置槽函数
 
-        # todo 字体颜色在设置了大小后，更改颜色字体大小会变为默认大小
-        # 字体设置
+        # 定义字体类型
         fonts = ['Arial', 'Microsoft YaHei UI', 'Microsoft YaHei UI Light', 'Times New Roman', '仿宋', '仿宋_GB2312', '宋体',
-         '宋体-PUA', '微软雅黑', '微软雅黑 Light', '新宋体', '楷体', '楷体_GB2312', '等线', '黑体']
+                 '宋体-PUA', '微软雅黑', '微软雅黑 Light', '新宋体', '楷体', '楷体_GB2312', '等线', '黑体']
         self.font = QComboBox()
         self.font.addItems(fonts)
         self.font.setCurrentText('宋体')
         self.font.setMaximumWidth(100)  # 设置字体选择下拉框的最大宽度
+        self.font.currentTextChanged.connect(self.change_font)      # 设置字体样式
         self.toolBar_quick.addWidget(self.font)     # 将字号设置控件加入到快捷栏
-        self.color = QPushButton()  # 颜色
+
+        # 设置颜色
+        self.color = QToolButton()  # 颜色
         self.color.setIcon(QIcon(":/icons/img/font.png"))   # 颜色设置按钮图标
-        self.color.setIconSize(QSize(25, 25))
+        # self.color.setIconSize(QSize(25, 25))
         self.color.setMaximumSize(25, 25)
-        self.color.setFlat(True)
         self.toolBar_quick.addWidget(self.color)        # 将颜色设置控件加入到快捷栏
+
+        # 设置字体为粗体
+        self.font_bold = QToolButton()
+        self.font_bold.setIcon(QIcon(":icons/img/bold.png"))
+        self.font_bold.setMaximumSize(25, 25)
+        self.toolBar_quick.addWidget(self.font_bold)  # 将颜色设置控件加入到快捷栏
+        self.font_bold.clicked.connect(self.change_font_bold)
+
+        # 设置字体为斜体
+        self.font_italic = QToolButton()
+        self.font_italic.setIcon(QIcon(":icons/img/italic.png"))
+        self.font_italic.setMaximumSize(25, 25)
+        self.toolBar_quick.addWidget(self.font_italic)  # 将颜色设置控件加入到快捷栏
+        self.font_italic.clicked.connect(self.change_font_italic)
+
+    # todo 对于选取一块不同格式的文本进行改变字体及大小时，会改变为选取的第一行的格式大小。
+    # 字体设置
+    def change_font(self):
+        select_text = self.input_text.textCursor()
+        text_format = self.input_text.currentCharFormat()   # 获取当前字体的格式
+        select_font = self.font.currentText()       # 获取当前选择字体
+        print('选择字体：',select_font)
+        text_format.setFontFamilies([select_font])      # 设置字体，需要接收列表类型格式
+        select_text.mergeCharFormat(text_format)        # 将字体格式追加到原字符串格式中
 
 
     # 设置字体颜色
@@ -176,20 +206,34 @@ class MainUi(Ui_MainWindow, QMainWindow):
         text_format = self.input_text.currentCharFormat()
         # print('选中内容：',color.name())
         if color.isValid():
-            print(text_format.fontFamilies(),text_format.fontFamily())
             text_format.setForeground(QBrush(QColor(color)))
             select_text.mergeCharFormat(text_format)
 
-
-
     # 设置字体大小
-    def chioce_font_size(self):
+    def change_font_size(self):
         font_size = self.font_size.currentText()
         select_text = self.input_text.textCursor()      # 游标位置
-        text_format = QTextCharFormat()                    # 定义字体格式
+        text_format = self.input_text.currentCharFormat()                    # 定义字体格式
         text_format.setFontPointSize(float(font_size))  # 设置文档字体大小格式
-        select_text.mergeCharFormat(text_format)        # 追加文档格式，
+        select_text.mergeCharFormat(text_format)        # 追加至文档格式中
 
+    # 设置字体为粗体
+    def change_font_bold(self):
+        select_text = self.input_text.textCursor()  # 游标位置
+        text_format = self.input_text.currentCharFormat()  # 定义字体格式
+        current_font = text_format.font()       # 获取当前文本的字体格式
+        # print('当前字体', current_font)
+        current_font.setBold(True)          # 将当前文本的字体加粗
+        # print('当前字体1', current_font)
+        text_format.setFont(current_font)       # 设置文本格式为加粗后的格式
+        select_text.mergeCharFormat(text_format)        # 追加至文档格式中
+
+    # 设置字体为斜体
+    def change_font_italic(self):
+        select_text = self.input_text.textCursor()  # 游标位置
+        text_format = self.input_text.currentCharFormat()
+        text_format.setFontItalic(True)
+        select_text.mergeCharFormat(text_format)  # 追加至文档格式中
 
     # 文件列表框右键菜单
     def tree_file_menu(self, pos):
@@ -217,29 +261,31 @@ class MainUi(Ui_MainWindow, QMainWindow):
         action_create_dir.triggered.connect(self.add_dirs)
         action_file.triggered.connect(self.add_files)
         action_del.triggered.connect(self.del_dirs)  # 连接删除目录信号
+        action_alter.triggered.connect(self.alter_item)  # 连接修改目录信号
 
         self.file_menu.exec(self.mapToGlobal(pos))  # 在光标位置显示菜单
 
     # 文件列表添加文件夹功能
     def add_dirs(self):
         create_file_sql = ''' insert into files_sort (file_name,path) values (?,?); '''
-        select_filename_sql = '''select file_name from files_sort where file_name = ? '''
+
         max_id = self.db.select(file_max_id_sql)[0][0]
         if max_id is None:
             max_id = 0
         value, ok = QInputDialog.getText(self, '文件名', '请输入文件名：', QLineEdit.Normal, '新文件夹')  # 获取输入弹出框文本
         # print(self.db.select(select_filename_sql, (value,)),ok)
-        if ok is True and self.db.select(select_filename_sql, (value,)) == []:  # 判断文件名是否重复且点击了ok按钮
+        if ok and self.db.select(select_filename_sql, (value,)) == []:  # 判断文件名是否重复且点击了ok按钮
             root_dir = QTreeWidgetItem()  # 定义项，作为顶级项
             root_dir.setText(0, value)  # 设置项名称
             self.tree_file.addTopLevelItem(root_dir)  # 设置为顶级项
+            root_dir.setIcon(0,QIcon(':icons/img/52.ico'))
             # index_id = self.tree_file.indexOfTopLevelItem(root_dir)
             self.db.alter(create_file_sql, (value, max_id + 1))
         else:
             QMessageBox.warning(self, '添加文件夹', '文件名输入有误或重复，请重新输入！')
             return
 
-    # 删除目录
+    # 删除文件目录
     def del_dirs(self):
         del_sql = '''delete from files_sort where file_name=?'''
         item = self.tree_file.currentItem()  # 当前选定项
@@ -263,6 +309,28 @@ class MainUi(Ui_MainWindow, QMainWindow):
         else:
             QMessageBox.warning(self,'删除目录','该目录存在下级目录，不能删除')
 
+    # todo 未完成
+    # 修改文件名
+    def alter_item(self):
+        # 修改文件列表中的文件名SQL
+        alter_file_sort_sql = ''' update files_sort set file_name = ? where id =?; '''
+        # 修改文件内容表中的文件名SQL
+        alter_file_content_sql = ''' update file_content set filename = ? where file_id=? '''
+        current_item = self.tree_file.currentItem()
+        filename = current_item.text(0)     # 当前文件名
+        current_item_id = self.db.select(select_fileid_sql,(filename,))[0][0]
+        value, ok = QInputDialog.getText(self, '修改文件名', '请输入新文件名：', QLineEdit.Normal, filename)  # 获取输入弹出框文本
+        if ok:
+            # print(current_item_id,value)
+            # 执行修改
+            current_item.setText(0,value)
+            self.db.alter(alter_file_sort_sql,(value,current_item_id))  # 修改文件列表中的文件名
+            self.db.alter(alter_file_content_sql,(value,current_item_id))  # 修改文件内容表中的文件名
+            QMessageBox.information(self,'修改文件名','文件名修改成功！',)
+            print('修改成功！')
+        else:
+            return
+
     # 文件列表添加文件功能
     def add_files(self):
         add_item_sql = ''' insert into files_sort (file_name,parent_id,path) values (?,?,?); '''
@@ -274,7 +342,11 @@ class MainUi(Ui_MainWindow, QMainWindow):
         item_id = self.db.select(select_fileid_sql, (item_name,))[0][0]  # 当前选择项id
         # 二级目录设定
         top_index = self.tree_file.indexOfTopLevelItem(item)  # 顶级目录索引
-        if top_index >= 0 and ok:
+        db_item_name =self.db.select(select_filename_sql, (value,))     # 数据库中文件名
+        print('数据库中',db_item_name)
+        if db_item_name:
+            QMessageBox.warning(self, '创建文件', '文件名重复！')
+        elif top_index >= 0 and ok :
             path = item_id
             path = str(path) + '/' + str(max_id + 1)
             # print('path', path)
@@ -282,6 +354,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
             self.db.alter(add_item_sql, (value, item_id, path))  # 添加项的ID为最大id+1
             child_item = QTreeWidgetItem(item)  # 创建子项
             child_item.setText(0, value)  # 设置项名称
+            child_item.setIcon(0, QIcon(':icons/img/2.ico'))  # 二级目录添加图标
         # 三级目录 文件创建
         elif self.tree_file.indexOfTopLevelItem(item.parent()) >= 0 and ok:  # 当前选择项的你父项为顶级项且点击了Ok按钮
             # print(item.text(0))

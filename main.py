@@ -30,7 +30,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
         self.action_displaylist.changed.connect(self.hide_tabview)  # 显示与隐藏tabwidget预览窗口
         self.action_to_md.changed.connect(self.hide_textbrowser)    # 显示与隐藏markdown预览窗口
         self.action_save.triggered.connect(self.save)  # 保存数据
-        self.action_clip.triggered.connect(self.display_clip)  # 显示粘贴板信息
+        # self.action_clip.triggered.connect(self.display_clip)  # 显示粘贴板信息
         self.color.clicked.connect(self.chioce_color)  # 设置字体的颜色
         self.display_tree_files()  # 显示文件列表内容
         self.tree_file.clicked.connect(self.load_content_to_win)  # 文件列表点击事件连接到显示文件函数
@@ -152,8 +152,13 @@ class MainUi(Ui_MainWindow, QMainWindow):
         self.toolBar_quick.addWidget(self.font_size)
         self.font_size.currentTextChanged.connect(self.chioce_font_size)    # 连接到字号大小设置槽函数
 
+        # todo 字体颜色在设置了大小后，更改颜色字体大小会变为默认大小
         # 字体设置
-        self.font = QFontComboBox()
+        fonts = ['Arial', 'Microsoft YaHei UI', 'Microsoft YaHei UI Light', 'Times New Roman', '仿宋', '仿宋_GB2312', '宋体',
+         '宋体-PUA', '微软雅黑', '微软雅黑 Light', '新宋体', '楷体', '楷体_GB2312', '等线', '黑体']
+        self.font = QComboBox()
+        self.font.addItems(fonts)
+        self.font.setCurrentText('宋体')
         self.font.setMaximumWidth(100)  # 设置字体选择下拉框的最大宽度
         self.toolBar_quick.addWidget(self.font)     # 将字号设置控件加入到快捷栏
         self.color = QPushButton()  # 颜色
@@ -163,26 +168,27 @@ class MainUi(Ui_MainWindow, QMainWindow):
         self.color.setFlat(True)
         self.toolBar_quick.addWidget(self.color)        # 将颜色设置控件加入到快捷栏
 
+
     # 设置字体颜色
     def chioce_color(self):
         color = QColorDialog.getColor()
         select_text = self.input_text.textCursor()
+        text_format = self.input_text.currentCharFormat()
         # print('选中内容：',color.name())
         if color.isValid():
-            self.color.setStyleSheet("background-color:{}".format(color.name()))  # 颜色设置按钮的背景颜色
-            select_text.insertHtml(
-                '<p><span style="color: {}">{}</span></p>'.format(color.name(), select_text.selectedText()))
+            print(text_format.fontFamilies(),text_format.fontFamily())
+            text_format.setForeground(QBrush(QColor(color)))
+            select_text.mergeCharFormat(text_format)
 
-    # todo 字体设置需要修改为QFontDialog.getFont()
+
+
     # 设置字体大小
     def chioce_font_size(self):
         font_size = self.font_size.currentText()
         select_text = self.input_text.textCursor()      # 游标位置
-        print('选择的字号：',font_size)
-        select_text.insertHtml(
-            '<p><font size= "{}">{}</font></p>'.format(font_size, select_text.selectedText()))
-        print('选择的字号：', QFontDialog.getFont())
-
+        text_format = QTextCharFormat()                    # 定义字体格式
+        text_format.setFontPointSize(float(font_size))  # 设置文档字体大小格式
+        select_text.mergeCharFormat(text_format)        # 追加文档格式，
 
 
     # 文件列表框右键菜单

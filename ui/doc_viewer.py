@@ -85,8 +85,6 @@ class Ui_MainWindow(object):
         self.action_markdown.setObjectName(u"action_markdown")
         self.action_web = QAction(MainWindow)
         self.action_web.setObjectName(u"action_web")
-        self.action_clip = QAction(MainWindow)
-        self.action_clip.setObjectName(u"action_clip")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout = QVBoxLayout(self.centralwidget)
@@ -109,6 +107,15 @@ class Ui_MainWindow(object):
         self.verticalLayout_2 = QVBoxLayout(self.tab_file)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.tree_file = QTreeWidget(self.tab_file)
+        brush = QBrush(QColor(0, 0, 255, 255))
+        brush.setStyle(Qt.SolidPattern)
+        font = QFont()
+        font.setPointSize(10)
+        __qtreewidgetitem = QTreeWidgetItem()
+        __qtreewidgetitem.setTextAlignment(0, Qt.AlignCenter);
+        __qtreewidgetitem.setFont(0, font);
+        __qtreewidgetitem.setForeground(0, brush);
+        self.tree_file.setHeaderItem(__qtreewidgetitem)
         self.tree_file.setObjectName(u"tree_file")
         self.tree_file.setStyleSheet(u"background-color:rgb(225,255,255)")
 
@@ -134,9 +141,10 @@ class Ui_MainWindow(object):
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.input_text.sizePolicy().hasHeightForWidth())
         self.input_text.setSizePolicy(sizePolicy1)
-        font = QFont()
-        font.setPointSize(12)
-        self.input_text.setFont(font)
+        font1 = QFont()
+        font1.setFamilies([u"\u5b8b\u4f53"])
+        font1.setPointSize(12)
+        self.input_text.setFont(font1)
         self.input_text.setAutoFillBackground(False)
         self.input_text.setStyleSheet(u"background-color:rgb(253,245,230);\n"
 "selection-background-color:DeepSkyBlue")
@@ -218,9 +226,9 @@ class Ui_MainWindow(object):
         self.toolBar_quick.addAction(self.action_to_md)
         self.toolBar_quick.addAction(self.action_displaylist)
         self.toolBar_quick.addSeparator()
-        self.toolBar_quick.addAction(self.action_clip)
 
         self.retranslateUi(MainWindow)
+        self.action_exit.triggered.connect(MainWindow.close)
 
         self.tabWidget.setCurrentIndex(0)
 
@@ -254,7 +262,6 @@ class Ui_MainWindow(object):
         self.action_about.setText(QCoreApplication.translate("MainWindow", u"\u5173\u4e8e", None))
         self.action_markdown.setText(QCoreApplication.translate("MainWindow", u"markdown\u9884\u89c8", None))
         self.action_web.setText(QCoreApplication.translate("MainWindow", u"\u7f51\u7ad9", None))
-        self.action_clip.setText(QCoreApplication.translate("MainWindow", u"\u663e\u793a\u7c98\u8d34\u677f\u5185\u5bb9", None))
         ___qtreewidgetitem = self.tree_file.headerItem()
         ___qtreewidgetitem.setText(0, QCoreApplication.translate("MainWindow", u"\u6587\u4ef6\u5217\u8868", None));
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_file), QCoreApplication.translate("MainWindow", u"\u6587\u4ef6", None))

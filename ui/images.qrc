@@ -11,5 +11,8 @@
     <file>../img/italic.png</file>
     <file>../img/52.ico</file>
     <file>../img/2.ico</file>
+    <file>../img/blue_ml.png</file>
+    <file>../img/ml.png</file>
+    <file>../img/bookmark.png</file>
   </qresource>
 </RCC>

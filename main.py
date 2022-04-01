@@ -126,13 +126,14 @@ class MainUi(Ui_MainWindow, QMainWindow):
             for sec_item in second_item_data:
                 second_item = QTreeWidgetItem(root_item)
                 second_item.setText(0, sec_item[0])
-                second_item.setIcon(0, QIcon(':icons/img/2.ico'))  # 二级目录添加图标
+                second_item.setIcon(0, QIcon(':icons/img/blue_ml.png'))  # 二级目录添加图标
                 three_item_data = self.db.select(select_second_item_sql, (sec_item[0],))
                 # print('三级',three_item_data)
                 # 显示三级item
                 for thr_item in three_item_data:
                     three_item = QTreeWidgetItem(second_item)
                     three_item.setText(0, thr_item[0])
+                    three_item.setIcon(0, QIcon(':icons/img/2.ico'))  # 二级目录添加图标
             self.tree_file.addTopLevelItem(root_item)
 
     # 显示粘贴板内容
@@ -290,7 +291,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
         del_sql = '''delete from files_sort where file_name=?'''
         item = self.tree_file.currentItem()  # 当前选定项
         item_name = item.text(0)  # 当前项索引
-        print('子项数',item.childCount())
+        # print('子项数',item.childCount())
         # 判断是否有子项
         if item.childCount() == 0:
             if QMessageBox.question(self, '删除目录', '是否确认删除当前目录', QMessageBox.Yes, QMessageBox.No) == QMessageBox.Yes:
@@ -309,7 +310,6 @@ class MainUi(Ui_MainWindow, QMainWindow):
         else:
             QMessageBox.warning(self,'删除目录','该目录存在下级目录，不能删除')
 
-    # todo 未完成
     # 修改文件名
     def alter_item(self):
         # 修改文件列表中的文件名SQL
@@ -343,7 +343,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
         # 二级目录设定
         top_index = self.tree_file.indexOfTopLevelItem(item)  # 顶级目录索引
         db_item_name =self.db.select(select_filename_sql, (value,))     # 数据库中文件名
-        print('数据库中',db_item_name)
+        # print('数据库中',db_item_name)
         if db_item_name:
             QMessageBox.warning(self, '创建文件', '文件名重复！')
         elif top_index >= 0 and ok :
@@ -354,7 +354,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
             self.db.alter(add_item_sql, (value, item_id, path))  # 添加项的ID为最大id+1
             child_item = QTreeWidgetItem(item)  # 创建子项
             child_item.setText(0, value)  # 设置项名称
-            child_item.setIcon(0, QIcon(':icons/img/2.ico'))  # 二级目录添加图标
+            child_item.setIcon(0, QIcon(':icons/img/blue_ml.png'))  # 二级目录添加图标
         # 三级目录 文件创建
         elif self.tree_file.indexOfTopLevelItem(item.parent()) >= 0 and ok:  # 当前选择项的你父项为顶级项且点击了Ok按钮
             # print(item.text(0))
@@ -363,6 +363,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
             # print(item_path)
             child_item = QTreeWidgetItem(item)  # 创建子项
             child_item.setText(0, value)  # 设置项名称
+            child_item.setIcon(0, QIcon(':icons/img/2.ico'))    # 三级目录添加图标
             path = str(item_path[0][0]) + '/' + str(max_id + 1)  # 当前选择项的子项的层级位置信息
             # print(path)
             self.db.alter(add_item_sql,

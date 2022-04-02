@@ -1,10 +1,13 @@
 import sys
 import os
+import pathlib
+import uuid
 from ui.doc_viewer import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
 from sqlite_handler import *
+from bs4 import BeautifulSoup
 from markdown2 import Markdown
 
 # 公用SQL
@@ -12,6 +15,7 @@ file_max_id_sql = ''' select max(id) from files_sort s '''
 select_fileid_sql = '''select id from files_sort s where s.file_name=? '''
 add_item_sql = ''' insert into files_sort (file_name,parent_id,path) values (?,?,?); '''
 select_filename_sql = '''select file_name from files_sort where file_name = ? '''
+
 
 class MainUi(Ui_MainWindow, QMainWindow):
 
@@ -36,7 +40,6 @@ class MainUi(Ui_MainWindow, QMainWindow):
         self.color.clicked.connect(self.chioce_color)  # 设置字体的颜色
         self.display_tree_files()  # 显示文件列表内容
         self.tree_file.clicked.connect(self.load_content_to_win)  # 文件列表点击事件连接到显示文件函数
-
 
     # 隐藏显示文件大纲tab窗口
     def hide_tabview(self):
@@ -67,32 +70,70 @@ class MainUi(Ui_MainWindow, QMainWindow):
         content_file_id_sql = '''select file_id from file_content where file_id=? '''  # 文件内容表中file_id
         alter_content_sql = ''' update file_content set content=?,last_alter_date=? where file_id = ? '''     # 修改文件内容
         text_conntent = self.input_text.document().toHtml()
+        soup = BeautifulSoup(text_conntent,'html.parser')       # 解析html文件
+        img_list = soup.find_all('img')     # 获取文档中图片地址信息
+        # print(img_list)
         item = self.tree_file.currentItem()  # 当前选择文件
         if item:
             file_id = self.db.select(select_fileid_sql, (item.text(0),))[0][0]  # 从文件列表中获取文件id
-            print(file_id)
+            # print(file_id)
             time = QDateTime.currentDateTime()  # 获取系统当前时间
             timedisplay = time.toString("yyyy-MM-dd hh:mm:ss")  # 格式化一下时间
             content_file_id = self.db.select(content_file_id_sql,(file_id,))    # 查询文件内容表中的文件id
-            print(content_file_id)
+            # print(content_file_id)
             # 保存至数据库,判断文件内容列表中是否有数据，有则修改，无所添加
             if len(content_file_id) == 0:
+                # 修改图片目录至本地
+                for img in img_list:
+                    source_img_path = pathlib.Path(img['src'])  # 获取图片路径
+                    base_img = pathlib.Path(__file__).parent / 'pictures'  # 图片文件目录
+                    # if base_img.exists():       # 判断是否存在 ：在打开软件时直接创建，避免多次判断
+                    print('源：', source_img_path, '目标', base_img)
+                    # 将图片复制到软件本地目录下
+                    new_img_name = base_img.joinpath(str(uuid.uuid4())+source_img_path.suffix)  # 定义新图片文件的目录及文件名以uuid形式
+                    print(self.download_img(img['src'], new_img_name))  # 下载至本地
+                    img['src'] = new_img_name       # 修改HTML中图片路径
+                # 将修改图片路径后的HTML文件保存至数据库
                 try:
-                    self.db.alter(save_to_html_sql, (file_id, item.text(0), text_conntent, timedisplay))
+                    self.db.alter(save_to_html_sql, (file_id, item.text(0), str(soup), timedisplay))
                 except Exception as e:
                     print('错误：', e)
                 else:
                     print('数据保存成功！')
             else:
+                # 修改图片目录至本地
+                for img in img_list:
+                    source_img_path = pathlib.Path(img['src'])  # 获取图片路径
+                    base_img = pathlib.Path(__file__).parent / 'pictures'  # 图片文件目录
+                    print('源：', source_img_path, '目标', base_img)
+                    if source_img_path.parent == base_img:  # 判断图片目录是否在当前软件目录的pictures下
+                        print('该图片在当前软件目录，不需要迁移！')
+                        continue
+                    else:
+                        new_img_name = base_img.joinpath(str(uuid.uuid4())+source_img_path.suffix)  # 定义新图片文件的目录及文件名
+                        print(self.download_img(img['src'], new_img_name))  # 下载至本地
+                        img['src'] = new_img_name  # 修改HTML中图片路径
+                # 将修改图片路径后的HTML文件保存至数据库
                 try:
-                    self.db.alter(alter_content_sql, (text_conntent, timedisplay,file_id))
+                    self.db.alter(alter_content_sql, (str(soup), timedisplay,file_id))
                 except Exception as e:
                     print('错误：', e)
                 else:
                     print('数据修改成功！')
+
+
         else:
             print('未选择项，不能保存')
             return
+
+    # 下载图片到本地目录下
+    def download_img(self,img_file,new_img):
+        """ 将文档中的图片转存到软件的目录下"""
+        source_img = pathlib.Path(img_file)
+        dest_img = pathlib.Path(new_img)
+        dest_img.write_bytes(source_img.read_bytes())
+        print('新图片目录：',new_img)
+        # return new_img
 
     # 显示加载显示文件内容
     def load_content_to_win(self):

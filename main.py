@@ -40,6 +40,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
         self.color.clicked.connect(self.chioce_color)  # 设置字体的颜色
         self.display_tree_files()  # 显示文件列表内容
         self.tree_file.clicked.connect(self.load_content_to_win)  # 文件列表点击事件连接到显示文件函数
+        self.action_img.triggered.connect(self.insert_img)      # 插入图片
 
     # 隐藏显示文件大纲tab窗口
     def hide_tabview(self):
@@ -246,7 +247,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
         color = QColorDialog.getColor()
         select_text = self.input_text.textCursor()
         text_format = self.input_text.currentCharFormat()
-        # print('选中内容：',color.name())
+        # print('选中内容：',select_text.document().toHtml())
         if color.isValid():
             text_format.setForeground(QBrush(QColor(color)))
             select_text.mergeCharFormat(text_format)
@@ -414,6 +415,17 @@ class MainUi(Ui_MainWindow, QMainWindow):
             return
         self.tree_file.expandItem(item)  # 展开当前节点
 
+    # 插入图片
+    def insert_img(self):
+        file_path = QFileDialog.getOpenFileName(self,'插入图片','','图片(*.png *.jpg *.bmp)')
+        print(file_path[0])
+        text_cur = self.input_text.textCursor()     # 光标位置
+        text_cur.insertImage(QImage(file_path[0]))
+
+    # todo 退出时判断是否发生修改
+    # 退出判断是否需要保存
+    def exit_sys(self):
+        pass
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

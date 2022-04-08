@@ -101,7 +101,6 @@
        </property>
        <property name="font">
         <font>
-         <family>宋体</family>
          <pointsize>12</pointsize>
         </font>
        </property>
@@ -195,6 +194,8 @@ selection-background-color:DeepSkyBlue</string>
     <addaction name="actionselectall"/>
     <addaction name="separator"/>
     <addaction name="menufindandreplace"/>
+    <addaction name="separator"/>
+    <addaction name="action_img"/>
    </widget>
    <widget class="QMenu" name="menu_view">
     <property name="title">
@@ -235,6 +236,7 @@ selection-background-color:DeepSkyBlue</string>
     <bool>false</bool>
    </attribute>
    <addaction name="action_to_md"/>
+   <addaction name="action_img"/>
    <addaction name="action_displaylist"/>
    <addaction name="separator"/>
   </widget>
@@ -369,6 +371,15 @@ selection-background-color:DeepSkyBlue</string>
   <action name="action_web">
    <property name="text">
     <string>网站</string>
+   </property>
+  </action>
+  <action name="action_img">
+   <property name="icon">
+    <iconset resource="images.qrc">
+     <normaloff>:/icons/img/tp.png</normaloff>:/icons/img/tp.png</iconset>
+   </property>
+   <property name="text">
+    <string>插入图片</string>
    </property>
   </action>
  </widget>

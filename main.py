@@ -91,7 +91,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
                     # if base_img.exists():       # 判断是否存在 ：在打开软件时直接创建，避免多次判断
                     print('源：', source_img_path, '目标', base_img)
                     # 将图片复制到软件本地目录下
-                    new_img_name = base_img.joinpath(str(uuid.uuid4())+source_img_path.suffix)  # 定义新图片文件的目录及文件名以uuid形式
+                    new_img_name = pathlib.Path('pictures').joinpath(str(uuid.uuid4())+source_img_path.suffix)  # 定义新图片文件的目录及文件名以uuid形式
                     print(self.download_img(img['src'], new_img_name))  # 下载至本地
                     img['src'] = new_img_name       # 修改HTML中图片路径
                 # 将修改图片路径后的HTML文件保存至数据库
@@ -111,7 +111,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
                         print('该图片在当前软件目录，不需要迁移！')
                         continue
                     else:
-                        new_img_name = base_img.joinpath(str(uuid.uuid4())+source_img_path.suffix)  # 定义新图片文件的目录及文件名
+                        new_img_name = pathlib.Path('pictures').joinpath(str(uuid.uuid4())+source_img_path.suffix)  # 定义新图片文件的目录及文件名
                         print(self.download_img(img['src'], new_img_name))  # 下载至本地
                         img['src'] = new_img_name  # 修改HTML中图片路径
                 # 将修改图片路径后的HTML文件保存至数据库

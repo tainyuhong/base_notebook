@@ -38,6 +38,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
         self.action_save.triggered.connect(self.save)  # 保存数据
         # self.action_clip.triggered.connect(self.display_clip)  # 显示粘贴板信息
         self.color.clicked.connect(self.chioce_color)  # 设置字体的颜色
+        self.font_bg_color.clicked.connect(self.chioce_font_bg_color)    # 设置字体的背景颜色
         self.display_tree_files()  # 显示文件列表内容
         self.tree_file.clicked.connect(self.load_content_to_win)  # 文件列表点击事件连接到显示文件函数
         self.action_img.triggered.connect(self.insert_img)      # 插入图片
@@ -210,17 +211,26 @@ class MainUi(Ui_MainWindow, QMainWindow):
         self.font.currentTextChanged.connect(self.change_font)      # 设置字体样式
         self.toolBar_quick.addWidget(self.font)     # 将字号设置控件加入到快捷栏
 
-        # 设置颜色
+        # 设置字体颜色
         self.color = QToolButton()  # 颜色
         self.color.setIcon(QIcon(":/icons/img/font.png"))   # 颜色设置按钮图标
+        self.color.setToolTip('字体颜色')
         # self.color.setIconSize(QSize(25, 25))
         self.color.setMaximumSize(25, 25)
         self.toolBar_quick.addWidget(self.color)        # 将颜色设置控件加入到快捷栏
+
+        # 设置字体背景颜色
+        self.font_bg_color = QToolButton()  # 颜色
+        self.font_bg_color.setIcon(QIcon(":/icons/img/font_bg.png"))  # 颜色设置按钮图标
+        # self.font_bg_color.setMaximumSize(25, 25)
+        self.font_bg_color.setToolTip('背景颜色')
+        self.toolBar_quick.addWidget(self.font_bg_color)  # 将颜色设置控件加入到快捷栏
 
         # 设置字体为粗体
         self.font_bold = QToolButton()
         self.font_bold.setIcon(QIcon(":icons/img/bold.png"))
         self.font_bold.setMaximumSize(25, 25)
+        self.font_bold.setToolTip('粗体')
         self.toolBar_quick.addWidget(self.font_bold)  # 将颜色设置控件加入到快捷栏
         self.font_bold.clicked.connect(self.change_font_bold)
 
@@ -228,6 +238,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
         self.font_italic = QToolButton()
         self.font_italic.setIcon(QIcon(":icons/img/italic.png"))
         self.font_italic.setMaximumSize(25, 25)
+        self.font_italic.setToolTip('斜体')
         self.toolBar_quick.addWidget(self.font_italic)  # 将颜色设置控件加入到快捷栏
         self.font_italic.clicked.connect(self.change_font_italic)
 
@@ -250,6 +261,16 @@ class MainUi(Ui_MainWindow, QMainWindow):
         # print('选中内容：',select_text.document().toHtml())
         if color.isValid():
             text_format.setForeground(QBrush(QColor(color)))
+            select_text.mergeCharFormat(text_format)
+
+    # 设置字体背景颜色
+    def chioce_font_bg_color(self):
+        color = QColorDialog.getColor()
+        select_text = self.input_text.textCursor()
+        text_format = self.input_text.currentCharFormat()
+        # print('选中内容：',select_text.document().toHtml())
+        if color.isValid():
+            text_format.setBackground(QBrush(QColor(color)))
             select_text.mergeCharFormat(text_format)
 
     # 设置字体大小

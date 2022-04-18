@@ -87,9 +87,9 @@ class MainUi(Ui_MainWindow, QMainWindow):
             if len(content_file_id) == 0:
                 # 修改图片目录至本地
                 for img in img_list:
-                    source_img_path = pathlib.Path(img['src'])  # 获取图片路径
+                    source_img_path = pathlib.Path(img['src']).resolve()  # 获取图片路径
                     base_img = pathlib.Path(__file__).parent / 'pictures'  # 图片文件目录
-                    # if base_img.exists():       # 判断是否存在 ：在打开软件时直接创建，避免多次判断
+
                     print('源：', source_img_path, '目标', base_img)
                     # 将图片复制到软件本地目录下
                     new_img_name = pathlib.Path('pictures').joinpath(str(uuid.uuid4())+source_img_path.suffix)  # 定义新图片文件的目录及文件名以uuid形式
@@ -105,9 +105,9 @@ class MainUi(Ui_MainWindow, QMainWindow):
             else:
                 # 修改图片目录至本地
                 for img in img_list:
-                    source_img_path = pathlib.Path(img['src'])  # 获取图片路径
+                    source_img_path = pathlib.Path(img['src']).resolve()  # 获取图片绝对路径
                     base_img = pathlib.Path(__file__).parent / 'pictures'  # 图片文件目录
-                    print('源：', source_img_path, '目标', base_img)
+                    print('源：', source_img_path, '目标', base_img,'绝对路径：',pathlib.Path(img['src']).resolve().parent)
                     if source_img_path.parent == base_img:  # 判断图片目录是否在当前软件目录的pictures下
                         print('该图片在当前软件目录，不需要迁移！')
                         continue
@@ -190,6 +190,8 @@ class MainUi(Ui_MainWindow, QMainWindow):
         print('是否有hasImage', clip.mimeData().hasImage(), 'data', clip.mimeData().imageData())  # 判断是否包含图片，并打印
         cur = self.display_text.textCursor()  # 设定文本游标
         cur.insertImage(clip.mimeData().text())  # 根据图片地址插入图片
+
+
 
     # 快捷工具栏
     def add_tool(self):

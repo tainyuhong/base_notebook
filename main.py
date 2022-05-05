@@ -72,6 +72,7 @@ class MainUi(Ui_MainWindow, QMainWindow):
         content_file_id_sql = '''select file_id from file_content where file_id=? '''  # 文件内容表中file_id
         alter_content_sql = ''' update file_content set content=?,last_alter_date=? where file_id = ? '''     # 修改文件内容
         text_conntent = self.input_text.document().toHtml()
+        # print(text_conntent)
         soup = BeautifulSoup(text_conntent,'html.parser')       # 解析html文件
         img_list = soup.find_all('img')     # 获取文档中图片地址信息
         # print(img_list)
@@ -87,13 +88,13 @@ class MainUi(Ui_MainWindow, QMainWindow):
             if len(content_file_id) == 0:
                 # 修改图片目录至本地
                 for img in img_list:
+                    # print('img',img)
                     source_img_path = pathlib.Path(img['src']).resolve()  # 获取图片路径
                     base_img = pathlib.Path(__file__).parent / 'pictures'  # 图片文件目录
-
-                    print('源：', source_img_path, '目标', base_img)
+                    # print('源：', source_img_path, '目标', base_img)
                     # 将图片复制到软件本地目录下
                     new_img_name = pathlib.Path('pictures').joinpath(str(uuid.uuid4())+source_img_path.suffix)  # 定义新图片文件的目录及文件名以uuid形式
-                    print(self.download_img(img['src'], new_img_name))  # 下载至本地
+                    self.download_img(img['src'], new_img_name) # 下载至本地
                     img['src'] = new_img_name       # 修改HTML中图片路径
                 # 将修改图片路径后的HTML文件保存至数据库
                 try:
@@ -107,13 +108,14 @@ class MainUi(Ui_MainWindow, QMainWindow):
                 for img in img_list:
                     source_img_path = pathlib.Path(img['src']).resolve()  # 获取图片绝对路径
                     base_img = pathlib.Path(__file__).parent / 'pictures'  # 图片文件目录
-                    print('源：', source_img_path, '目标', base_img,'绝对路径：',pathlib.Path(img['src']).resolve().parent)
+                    # print('img',img)
+                    # print('源：', source_img_path, '目标', base_img,'绝对路径：',pathlib.Path(img['src']).resolve().parent)
                     if source_img_path.parent == base_img:  # 判断图片目录是否在当前软件目录的pictures下
                         print('该图片在当前软件目录，不需要迁移！')
                         continue
                     else:
                         new_img_name = pathlib.Path('pictures').joinpath(str(uuid.uuid4())+source_img_path.suffix)  # 定义新图片文件的目录及文件名
-                        print(self.download_img(img['src'], new_img_name))  # 下载至本地
+                        self.download_img(img['src'], new_img_name)  # 下载至本地
                         img['src'] = new_img_name  # 修改HTML中图片路径
                 # 将修改图片路径后的HTML文件保存至数据库
                 try:
@@ -122,8 +124,6 @@ class MainUi(Ui_MainWindow, QMainWindow):
                     print('错误：', e)
                 else:
                     print('数据修改成功！')
-
-
         else:
             print('未选择项，不能保存')
             return
@@ -190,7 +190,6 @@ class MainUi(Ui_MainWindow, QMainWindow):
         print('是否有hasImage', clip.mimeData().hasImage(), 'data', clip.mimeData().imageData())  # 判断是否包含图片，并打印
         cur = self.display_text.textCursor()  # 设定文本游标
         cur.insertImage(clip.mimeData().text())  # 根据图片地址插入图片
-
 
 
     # 快捷工具栏
@@ -288,8 +287,11 @@ class MainUi(Ui_MainWindow, QMainWindow):
         select_text = self.input_text.textCursor()  # 游标位置
         text_format = self.input_text.currentCharFormat()  # 定义字体格式
         current_font = text_format.font()       # 获取当前文本的字体格式
-        # print('当前字体', current_font)
-        current_font.setBold(True)          # 将当前文本的字体加粗
+        print('是否为粗体', current_font.bold())
+        if current_font.bold():   # 如果当前为粗体，设置为非粗体
+            current_font.setBold(False)
+        else:
+            current_font.setBold(True)          # 将当前文本的字体加粗
         # print('当前字体1', current_font)
         text_format.setFont(current_font)       # 设置文本格式为加粗后的格式
         select_text.mergeCharFormat(text_format)        # 追加至文档格式中
@@ -298,8 +300,14 @@ class MainUi(Ui_MainWindow, QMainWindow):
     def change_font_italic(self):
         select_text = self.input_text.textCursor()  # 游标位置
         text_format = self.input_text.currentCharFormat()
-        text_format.setFontItalic(True)
-        select_text.mergeCharFormat(text_format)  # 追加至文档格式中
+        print('是否为斜体',text_format.fontItalic())
+        # 如果当前字体为斜体，则设置为非斜体
+        if text_format.fontItalic():
+            text_format.setFontItalic(False)
+            select_text.mergeCharFormat(text_format)  # 追加至文档格式中
+        else:
+            text_format.setFontItalic(True)
+            select_text.mergeCharFormat(text_format)  # 追加至文档格式中
 
     # 文件列表框右键菜单
     def tree_file_menu(self, pos):
@@ -443,7 +451,9 @@ class MainUi(Ui_MainWindow, QMainWindow):
         file_path = QFileDialog.getOpenFileName(self,'插入图片','','图片(*.png *.jpg *.bmp)')
         print(file_path[0])
         text_cur = self.input_text.textCursor()     # 光标位置
-        text_cur.insertImage(QImage(file_path[0]))
+        text_cur.insertHtml('< img src = "{}" / >'.format(file_path[0]))        # 以html方式插入图片
+
+        print(self.input_text.toHtml())
 
     # todo 退出时判断是否发生修改
     # 退出判断是否需要保存
